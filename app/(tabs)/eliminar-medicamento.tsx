@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import BackButton from '../../components/BackButton';
+import auth from '@react-native-firebase/auth';
 
 type Medicamento = {
   id: string;
@@ -14,8 +15,12 @@ export default function EliminarMedicamentoScreen() {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
+    const user = auth().currentUser;
+    if (!user) return;
+    
     const subscriber = firestore()
       .collection('Medicamentos')
+      .where('uid', '==', user.uid) // <-- só os medicamentos do utilizador autenticado
       .onSnapshot(querySnapshot => {
         const meds: Medicamento[] = [];
         querySnapshot.forEach(documentSnapshot => {

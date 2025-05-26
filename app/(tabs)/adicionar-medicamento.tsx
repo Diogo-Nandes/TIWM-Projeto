@@ -3,6 +3,7 @@ import { Alert, Button, StyleSheet, Text, TextInput, View, ActivityIndicator, Pl
 import firestore from '@react-native-firebase/firestore';
 import BackButton from '../../components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import auth from '@react-native-firebase/auth';
 
 export default function AdicionarMedicamentoScreen() {
   const [nome, setNome] = useState('');
@@ -27,6 +28,7 @@ export default function AdicionarMedicamentoScreen() {
         Quantidade_mg: Number(quantidade),
         De: firestore.Timestamp.fromDate(de),
         Até: firestore.Timestamp.fromDate(ate),
+        uid: auth().currentUser?.uid, // <-- associa ao utilizador autenticado
       });
       Alert.alert('Medicamento adicionado com sucesso!');
       setNome('');

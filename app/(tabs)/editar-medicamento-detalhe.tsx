@@ -4,6 +4,7 @@ import firestore from '@react-native-firebase/firestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import BackButton from '../../components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import auth from '@react-native-firebase/auth';
 
 export default function EditarMedicamentoDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,13 +20,25 @@ export default function EditarMedicamentoDetalheScreen() {
   useEffect(() => {
     const fetchMedicamento = async () => {
       try {
+        const user = auth().currentUser;
+        if (!user) return;
+
         const doc = await firestore().collection('Medicamentos').doc(id).get();
         if (doc.exists()) {
           const data = doc.data();
+          // Verifica se o medicamento pertence ao utilizador autenticado
+          if (data?.uid !== user.uid) {
+            Alert.alert('Acesso negado', 'Não tens permissão para editar este medicamento.');
+            router.back();  
+            return;
+          }
           setNome(data?.Nome_Med || '');
           setQuantidade(data?.Quantidade_mg?.toString() || '');
           setDe(data?.De?.toDate ? data.De.toDate() : null);
           setAte(data?.Até?.toDate ? data.Até.toDate() : null);
+        } else {
+          Alert.alert('Erro', 'Medicamento não encontrado.');
+          router.back();
         }
       } catch (error) {
         Alert.alert('Erro', 'Não foi possível carregar o medicamento.');

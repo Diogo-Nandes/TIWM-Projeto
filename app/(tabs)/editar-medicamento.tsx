@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 import firestore from '@react-native-firebase/firestore';
 import BackButton from '../../components/BackButton';
 import { useRouter } from 'expo-router';
+import auth from '@react-native-firebase/auth';
 
 type Medicamento = {
   id: string;
@@ -15,8 +16,12 @@ export default function EditarMedicamentoScreen() {
   const router = useRouter();
 
   useEffect(() => {
+    const user = auth().currentUser;
+    if (!user) return;
+
     const subscriber = firestore()
       .collection('Medicamentos')
+      .where('uid', '==', user.uid) // <-- só os medicamentos do utilizador autenticado
       .onSnapshot(querySnapshot => {
         const meds: Medicamento[] = [];
         querySnapshot.forEach(documentSnapshot => {
