@@ -10,6 +10,7 @@ type Medicamento = {
   Quantidade_mg: number;
   De?: { toDate: () => Date };
   Até?: { toDate: () => Date };
+  Horarios?: string[];
 };
 
 export default function MedicamentosScreen() {
@@ -22,7 +23,7 @@ export default function MedicamentosScreen() {
 
     const subscriber = firestore()
       .collection('Medicamentos')
-      .where('uid', '==', user.uid) // <-- só os medicamentos do utilizador autenticado
+      .where('uid', '==', user.uid)
       .onSnapshot(querySnapshot => {
         const meds: Medicamento[] = [];
         querySnapshot.forEach(documentSnapshot => {
@@ -63,6 +64,16 @@ export default function MedicamentosScreen() {
                 ? item.Até.toDate().toLocaleDateString()
                 : ''}
             </Text>
+            {item.Horarios && item.Horarios.length > 0 && (
+              <View style={styles.horariosBox}>
+                <Text style={styles.horariosTitulo}>Horários:</Text>
+                <View style={styles.horariosLista}>
+                  {item.Horarios.map((hora, idx) => (
+                    <Text key={idx} style={styles.horarioItem}>{hora}</Text>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
         ListEmptyComponent={<Text style={styles.empty}>Nenhum medicamento encontrado.</Text>}
@@ -76,5 +87,18 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
   item: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
   nome: { fontSize: 18, fontWeight: 'bold' },
+  horariosBox: { marginTop: 8 },
+  horariosTitulo: { fontWeight: 'bold', color: '#2196F3', marginBottom: 2 },
+  horariosLista: { flexDirection: 'row', flexWrap: 'wrap' },
+  horarioItem: {
+    backgroundColor: '#e3f2fd',
+    color: '#1565c0',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginRight: 8,
+    marginBottom: 4,
+    fontSize: 15,
+  },
   empty: { textAlign: 'center', marginTop: 32, color: '#888' },
 });

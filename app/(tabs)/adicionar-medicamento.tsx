@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Button, StyleSheet, Text, TextInput, View, ActivityIndicator, Platform } from 'react-native';
+import { Alert, Button, StyleSheet, Text, TextInput, View, FlatList, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
-import BackButton from '../../components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import BackButton from '../../components/BackButton';
 import auth from '@react-native-firebase/auth';
 
 export default function AdicionarMedicamentoScreen() {
@@ -10,15 +10,25 @@ export default function AdicionarMedicamentoScreen() {
   const [quantidade, setQuantidade] = useState('');
   const [de, setDe] = useState<Date | null>(null);
   const [ate, setAte] = useState<Date | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Para DatePicker
+  const [horarios, setHorarios] = useState<string[]>([]);
   const [showDe, setShowDe] = useState(false);
   const [showAte, setShowAte] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const adicionarHorario = (time: Date) => {
+    const novoHorario = time.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    setHorarios([...horarios, novoHorario]);
+  };
+
+  const removerHorario = (index: number) => {
+    const novosHorarios = horarios.filter((_, i) => i !== index);
+    setHorarios(novosHorarios);
+  };
 
   const adicionarMedicamento = async () => {
-    if (!nome.trim() || !quantidade.trim() || !de || !ate) {
-      Alert.alert('Preenche todos os campos!');
+    if (!nome.trim() || !quantidade.trim() || !de || !ate || horarios.length === 0) {
+      Alert.alert('Preenche todos os campos e adiciona pelo menos um horário!');
       return;
     }
     setLoading(true);
@@ -28,13 +38,15 @@ export default function AdicionarMedicamentoScreen() {
         Quantidade_mg: Number(quantidade),
         De: firestore.Timestamp.fromDate(de),
         Até: firestore.Timestamp.fromDate(ate),
-        uid: auth().currentUser?.uid, // <-- associa ao utilizador autenticado
+        Horarios: horarios,
+        uid: auth().currentUser?.uid ?? null,
       });
       Alert.alert('Medicamento adicionado com sucesso!');
       setNome('');
       setQuantidade('');
       setDe(null);
       setAte(null);
+      setHorarios([]);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível adicionar o medicamento.');
     } finally {
@@ -61,7 +73,6 @@ export default function AdicionarMedicamentoScreen() {
           keyboardType="numeric"
         />
 
-        {/* Data de início */}
         <Text style={styles.label}>De:</Text>
         <Button
           title={de ? de.toLocaleDateString() : "Selecionar data de início"}
@@ -79,7 +90,6 @@ export default function AdicionarMedicamentoScreen() {
           />
         )}
 
-        {/* Data de fim */}
         <Text style={styles.label}>Até:</Text>
         <Button
           title={ate ? ate.toLocaleDateString() : "Selecionar data de fim"}
@@ -97,6 +107,38 @@ export default function AdicionarMedicamentoScreen() {
           />
         )}
 
+        <Text style={styles.label}>Horários de toma:</Text>
+        <FlatList
+          data={horarios}
+          keyExtractor={(_, idx) => idx.toString()}
+          renderItem={({ item, index }) => (
+            <View style={styles.horarioItem}>
+              <Text style={styles.horarioText}>{item}</Text>
+              <TouchableOpacity onPress={() => removerHorario(index)}>
+                <Text style={styles.remover}>Remover</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          ListEmptyComponent={<Text style={styles.empty}>Nenhum horário adicionado.</Text>}
+        />
+        <Button
+          title="Adicionar horário"
+          onPress={() => setShowTimePicker(true)}
+        />
+        {showTimePicker && (
+          <DateTimePicker
+            value={new Date()}
+            mode="time"
+            is24Hour={true}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(_, selectedTime) => {
+              setShowTimePicker(false);
+              if (selectedTime) adicionarHorario(selectedTime);
+            }}
+          />
+        )}
+
+        <View style={styles.gap12} />
         {loading ? (
           <ActivityIndicator style={{ marginTop: 24 }} />
         ) : (
@@ -126,4 +168,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2196F3',
   },
+  horarioItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 6,
+    padding: 8,
+    justifyContent: 'space-between',
+  },
+  horarioText: {
+    fontSize: 16,
+    color: '#1565c0',
+  },
+  remover: {
+    color: '#F44336',
+    fontWeight: 'bold',
+    marginLeft: 12,
+  },
+  empty: { color: '#888', fontStyle: 'italic', marginBottom: 6 },
+  gap12: { height: 12 },
 });
