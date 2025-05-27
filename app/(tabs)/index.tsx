@@ -68,18 +68,3 @@ const styles = StyleSheet.create({
   button: { width: 150, height: 100, margin: 10, borderRadius: 12, justifyContent: "center", alignItems: "center", elevation: 3 },
   buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold", textAlign: "center" }
 });
-
-// npx expo start
-// npx expo run:android
-
-// npx expo prebuild --clean
-// cd android
-// ./gradlew clean
-// cd ..
-// npm install
-
-// C:\Users\diogo\Desktop\Projeto\SeniorReminder
-
-// npm install firebase
-// npm install @react-native-firebase/firestore
-// npm install @react-native-community/datetimepicker
