@@ -6,7 +6,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>NomeApp</Text>
+      <Text style={styles.title}>SeniorReminder</Text>
       <View style={styles.grid}>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: "#4CAF50" }]}
@@ -33,6 +33,12 @@ export default function HomeScreen() {
           <Text style={styles.buttonText}>Adicionar Medicamento</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.button, { backgroundColor: "#3F51B5" }]}
+          onPress={() => router.push("/editar-medicamento")}
+        >
+          <Text style={styles.buttonText}>Editar Medicamento</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.button, { backgroundColor: "#F44336" }]}
           onPress={() => router.push("/eliminar-medicamento")}
         >
@@ -44,14 +50,6 @@ export default function HomeScreen() {
         >
           <Text style={styles.buttonText}>Notificações</Text>
         </TouchableOpacity>
-        {/* Botão para editar medicamento */}
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: "#3F51B5" }]}
-          onPress={() => router.push("/editar-medicamento")}
-        >
-          <Text style={styles.buttonText}>Editar Medicamento</Text>
-        </TouchableOpacity>
-        {/* Botão para perfil */}
         <TouchableOpacity
           style={[styles.button, { backgroundColor: "#009688" }]}
           onPress={() => router.push("/perfil")}
@@ -70,3 +68,18 @@ const styles = StyleSheet.create({
   button: { width: 150, height: 100, margin: 10, borderRadius: 12, justifyContent: "center", alignItems: "center", elevation: 3 },
   buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold", textAlign: "center" }
 });
+
+// npx expo start
+// npx expo run:android
+
+// npx expo prebuild --clean
+// cd android
+// ./gradlew clean
+// cd ..
+// npm install
+
+// C:\Users\diogo\Desktop\Projeto\SeniorReminder
+
+// npm install firebase
+// npm install @react-native-firebase/firestore
+// npm install @react-native-community/datetimepicker
