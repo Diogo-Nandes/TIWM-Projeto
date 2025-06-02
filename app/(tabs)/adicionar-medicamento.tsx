@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Alert, Button, StyleSheet, Text, TextInput, View, FlatList, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { Alert, Button, StyleSheet, Text, TextInput, View, TouchableOpacity, ActivityIndicator, Image, Platform, ScrollView } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import BackButton from '../../components/BackButton';
 import auth from '@react-native-firebase/auth';
+import storage from '@react-native-firebase/storage';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function AdicionarMedicamentoScreen() {
   const [nome, setNome] = useState('');
@@ -15,6 +17,33 @@ export default function AdicionarMedicamentoScreen() {
   const [showAte, setShowAte] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à sua galeria!');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const uploadImage = async (medicamentoId: string) => {
+    if (!image) return null;
+    const reference = storage().ref(`medicamentos/${medicamentoId}`);
+    const response = await fetch(image);
+    const blob = await response.blob();
+    await reference.put(blob);
+    return await reference.getDownloadURL();
+  };
 
   const adicionarHorario = (time: Date) => {
     const novoHorario = time.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
@@ -33,20 +62,31 @@ export default function AdicionarMedicamentoScreen() {
     }
     setLoading(true);
     try {
-      await firestore().collection('Medicamentos').add({
+      const docRef = await firestore().collection('Medicamentos').add({
         Nome_Med: nome,
         Quantidade_mg: Number(quantidade),
         De: firestore.Timestamp.fromDate(de),
         Até: firestore.Timestamp.fromDate(ate),
         Horarios: horarios,
-        uid: auth().currentUser?.uid ?? null,
+        uid: auth().currentUser?.uid,
+        imagemUrl: '',
+        createdAt: firestore.FieldValue.serverTimestamp()
       });
+      let imagemUrl = '';
+      if (image) {
+        const url = await uploadImage(docRef.id);
+        if (url) {
+          imagemUrl = url;
+          await docRef.update({ imagemUrl: url });
+        }
+      }
       Alert.alert('Medicamento adicionado com sucesso!');
       setNome('');
       setQuantidade('');
       setDe(null);
       setAte(null);
       setHorarios([]);
+      setImage(null);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível adicionar o medicamento.');
     } finally {
@@ -58,13 +98,17 @@ export default function AdicionarMedicamentoScreen() {
     <View style={styles.container}>
       <BackButton />
       <Text style={styles.title}>Adicionar Medicamento</Text>
-      <View style={styles.form}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        
+        <Text style={styles.label}>Nome do medicamento:</Text>
         <TextInput
           style={styles.input}
           placeholder="Nome do medicamento"
           value={nome}
           onChangeText={setNome}
         />
+
+        <Text style={styles.label}>Dosagem:</Text>
         <TextInput
           style={styles.input}
           placeholder="Quantidade (mg)"
@@ -73,10 +117,19 @@ export default function AdicionarMedicamentoScreen() {
           keyboardType="numeric"
         />
 
+        <Button title="Adicionar imagem" onPress={pickImage} color="#2196F3" />
+        {image && (
+          <Image 
+            source={{ uri: image }} 
+            style={styles.imagePreview} 
+          />
+        )}
+
         <Text style={styles.label}>De:</Text>
         <Button
           title={de ? de.toLocaleDateString() : "Selecionar data de início"}
           onPress={() => setShowDe(true)}
+          color="#2196F3"
         />
         {showDe && (
           <DateTimePicker
@@ -94,6 +147,7 @@ export default function AdicionarMedicamentoScreen() {
         <Button
           title={ate ? ate.toLocaleDateString() : "Selecionar data de fim"}
           onPress={() => setShowAte(true)}
+          color="#2196F3"
         />
         {showAte && (
           <DateTimePicker
@@ -108,22 +162,24 @@ export default function AdicionarMedicamentoScreen() {
         )}
 
         <Text style={styles.label}>Horários de toma:</Text>
-        <FlatList
-          data={horarios}
-          keyExtractor={(_, idx) => idx.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.horarioItem}>
-              <Text style={styles.horarioText}>{item}</Text>
-              <TouchableOpacity onPress={() => removerHorario(index)}>
-                <Text style={styles.remover}>Remover</Text>
-              </TouchableOpacity>
-            </View>
+        <View>
+          {horarios.length === 0 ? (
+            <Text style={styles.empty}>Nenhum horário adicionado.</Text>
+          ) : (
+            horarios.map((hora, idx) => (
+              <View key={idx} style={styles.horarioItem}>
+                <Text style={styles.horarioText}>{hora}</Text>
+                <TouchableOpacity onPress={() => removerHorario(idx)}>
+                  <Text style={styles.remover}>Remover</Text>
+                </TouchableOpacity>
+              </View>
+            ))
           )}
-          ListEmptyComponent={<Text style={styles.empty}>Nenhum horário adicionado.</Text>}
-        />
+        </View>
         <Button
           title="Adicionar horário"
           onPress={() => setShowTimePicker(true)}
+          color="#2196F3"
         />
         {showTimePicker && (
           <DateTimePicker
@@ -140,19 +196,19 @@ export default function AdicionarMedicamentoScreen() {
 
         <View style={styles.gap12} />
         {loading ? (
-          <ActivityIndicator style={{ marginTop: 24 }} />
+          <ActivityIndicator size="large" color="#2196F3" />
         ) : (
-          <Button title="Adicionar" onPress={adicionarMedicamento} />
+          <Button title="Adicionar Medicamento" onPress={adicionarMedicamento} color="#4CAF50" />
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60 },
+  scrollContent: { paddingBottom: 40 },
   title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
-  form: { gap: 12 },
   input: {
     borderWidth: 1,
     borderColor: '#bbb',
@@ -188,4 +244,11 @@ const styles = StyleSheet.create({
   },
   empty: { color: '#888', fontStyle: 'italic', marginBottom: 6 },
   gap12: { height: 12 },
+  imagePreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginVertical: 10,
+    alignSelf: 'center',
+  },
 });

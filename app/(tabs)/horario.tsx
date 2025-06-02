@@ -13,6 +13,11 @@ type Medicamento = {
   Até?: { toDate: () => Date };
 };
 
+type HorarioGrupo = {
+  hora: string;
+  medicamentos: Medicamento[];
+};
+
 export default function HorarioScreen() {
   const [date, setDate] = useState(new Date());
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([]);
@@ -47,9 +52,32 @@ export default function HorarioScreen() {
     return startDate && endDate && date >= startDate && date <= endDate;
   };
 
-  const medicamentosFiltrados = medicamentos.filter(med => 
-    med.Horarios && med.Horarios.length > 0 && isDateInRange(med)
-  );
+  const getHorariosAgrupados = () => {
+    const medicamentosFiltrados = medicamentos.filter(med => 
+      med.Horarios && med.Horarios.length > 0 && isDateInRange(med)
+    );
+
+    // Extrair todas as horas únicas
+    const horasUnicas = Array.from(
+      new Set(
+        medicamentosFiltrados
+          .flatMap(med => med.Horarios || [])
+          .sort((a, b) => {
+            const [aH, aM] = a.split(':').map(Number);
+            const [bH, bM] = b.split(':').map(Number);
+            return aH - bH || aM - bM;
+          })
+      )
+    );
+
+    // Criar grupos de horários
+    return horasUnicas.map(hora => ({
+      hora,
+      medicamentos: medicamentosFiltrados.filter(med => 
+        med.Horarios?.includes(hora)
+      )
+    }));
+  };
 
   return (
     <View style={styles.container}>
@@ -82,16 +110,16 @@ export default function HorarioScreen() {
         <ActivityIndicator style={{ marginTop: 20 }} />
       ) : (
         <FlatList
-          data={medicamentosFiltrados}
-          keyExtractor={item => item.id}
+          data={getHorariosAgrupados()}
+          keyExtractor={item => item.hora}
           renderItem={({ item }) => (
-            <View style={styles.medicamentoItem}>
-              <Text style={styles.medicamentoNome}>{item.Nome_Med}</Text>
-              <View style={styles.horariosContainer}>
-                {item.Horarios?.map((hora, index) => (
-                  <Text key={index} style={styles.horarioText}>{hora}</Text>
-                ))}
-              </View>
+            <View style={styles.horarioGroup}>
+              <Text style={styles.horaHeader}>{item.hora}</Text>
+              {item.medicamentos.map(med => (
+                <View key={med.id} style={styles.medicamentoItem}>
+                  <Text style={styles.medicamentoNome}>{med.Nome_Med}</Text>
+                </View>
+              ))}
             </View>
           )}
           ListEmptyComponent={
@@ -106,39 +134,50 @@ export default function HorarioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60 },
-  title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#fff', 
+    padding: 16, 
+    paddingTop: 60 
+  },
+  title: { 
+    fontSize: 32, 
+    fontWeight: "bold", 
+    color: "#2196F3", 
+    textAlign: "center", 
+    marginBottom: 10, 
+    marginTop: 40 
+  },
   dateText: {
     fontSize: 18,
     textAlign: 'center',
     marginBottom: 15,
     color: '#555',
   },
-  medicamentoItem: {
+  horarioGroup: {
+    marginBottom: 20,
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
+    padding: 12,
+  },
+  horaHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1565c0',
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e3e3e3',
+    paddingBottom: 4,
+  },
+  medicamentoItem: {
+    backgroundColor: '#e3f2fd',
+    borderRadius: 6,
+    padding: 10,
+    marginVertical: 4,
   },
   medicamentoNome: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
     color: '#2196F3',
-    marginBottom: 8,
-  },
-  horariosContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  horarioText: {
-    backgroundColor: '#e3f2fd',
-    color: '#1565c0',
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    fontSize: 14,
   },
   emptyText: {
     textAlign: 'center',
@@ -147,3 +186,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

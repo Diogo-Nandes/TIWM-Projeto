@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, Platform, StyleSheet, Text, TextInput, View, FlatList, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Alert, Button, Platform, StyleSheet, Text, TextInput, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import BackButton from '../../components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import storage from '@react-native-firebase/storage';
 
 export default function EditarMedicamentoDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,9 +16,12 @@ export default function EditarMedicamentoDetalheScreen() {
   const [de, setDe] = useState<Date | null>(null);
   const [ate, setAte] = useState<Date | null>(null);
   const [horarios, setHorarios] = useState<string[]>([]);
+  const [imagemUrl, setImagemUrl] = useState<string | null>(null);
+  const [image, setImage] = useState<string | null>(null);
   const [showDe, setShowDe] = useState(false);
   const [showAte, setShowAte] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,6 +47,7 @@ export default function EditarMedicamentoDetalheScreen() {
           setDe(data?.De?.toDate ? data.De.toDate() : null);
           setAte(data?.Até?.toDate ? data.Até.toDate() : null);
           setHorarios(Array.isArray(data?.Horarios) ? data.Horarios : []);
+          setImagemUrl(data?.imagemUrl || null);
         } else {
           Alert.alert('Erro', 'Medicamento não encontrado.');
           router.back();
@@ -66,6 +72,44 @@ export default function EditarMedicamentoDetalheScreen() {
     setHorarios(novosHorarios);
   };
 
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à sua galeria!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!image) return null;
+    setUploading(true);
+    try {
+      const reference = storage().ref(`medicamentos/${id}`);
+      const response = await fetch(image);
+      const blob = await response.blob();
+      await reference.put(blob);
+      const url = await reference.getDownloadURL();
+      setImagemUrl(url);
+      return url;
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao fazer upload da imagem.');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const atualizarMedicamento = async () => {
     if (!nome.trim() || !quantidade.trim() || !de || !ate || horarios.length === 0) {
       Alert.alert('Preenche todos os campos e adiciona pelo menos um horário!');
@@ -73,12 +117,20 @@ export default function EditarMedicamentoDetalheScreen() {
     }
     setLoading(true);
     try {
+      let url = imagemUrl;
+      if (image) {
+        const uploadedUrl = await uploadImage();
+        if (uploadedUrl) {
+          url = uploadedUrl;
+        }
+      }
       await firestore().collection('Medicamentos').doc(id).update({
         Nome_Med: nome,
         Quantidade_mg: Number(quantidade),
         De: firestore.Timestamp.fromDate(de),
         Até: firestore.Timestamp.fromDate(ate),
         Horarios: horarios,
+        imagemUrl: url || '',
       });
       Alert.alert('Medicamento atualizado com sucesso!');
       router.back();
@@ -97,71 +149,76 @@ export default function EditarMedicamentoDetalheScreen() {
     <View style={styles.container}>
       <BackButton />
       <Text style={styles.title}>Editar Medicamento</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Nome do medicamento"
-        value={nome}
-        onChangeText={setNome}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Quantidade (mg)"
-        value={quantidade}
-        onChangeText={setQuantidade}
-        keyboardType="numeric"
-      />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        
+        <Text style={styles.label}>Nome do medicamento:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Nome do medicamento"
+          value={nome}
+          onChangeText={setNome}
+        />
 
-      <Text style={styles.label}>De:</Text>
-      <Button
-        title={de ? de.toLocaleDateString() : "Selecionar data de início"}
-        onPress={() => setShowDe(true)}
-      />
-      {showDe && (
-        <DateTimePicker
-          value={de || new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(_, selectedDate) => {
-            setShowDe(false);
-            if (selectedDate) setDe(selectedDate);
-          }}
+        <Text style={styles.label}>Dosagem:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Quantidade (mg)"
+          value={quantidade}
+          onChangeText={setQuantidade}
+          keyboardType="numeric"
         />
-      )}
 
-      <Text style={styles.label}>Até:</Text>
-      <Button
-        title={ate ? ate.toLocaleDateString() : "Selecionar data de fim"}
-        onPress={() => setShowAte(true)}
-      />
-      {showAte && (
-        <DateTimePicker
-          value={ate || new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(_, selectedDate) => {
-            setShowAte(false);
-            if (selectedDate) setAte(selectedDate);
-          }}
-        />
-      )}
-  	  <View style={{ height: 250 }}>
-        <Text style={styles.label}>Horários de toma:</Text>
-        <FlatList
-          data={horarios}
-          keyExtractor={(_, idx) => idx.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.horarioItem}>
-              <Text style={styles.horarioText}>{item}</Text>
-              <TouchableOpacity onPress={() => removerHorario(index)}>
-                <Text style={styles.remover}>Remover</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          ListEmptyComponent={<Text style={styles.empty}>Nenhum horário adicionado.</Text>}
-        />
-      </View>
+        <Text style={styles.label}>De:</Text>
         <Button
-          title="ADICIONAR HORÁRIO"
+          title={de ? de.toLocaleDateString() : "Selecionar data de início"}
+          onPress={() => setShowDe(true)}
+        />
+        {showDe && (
+          <DateTimePicker
+            value={de || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(_, selectedDate) => {
+              setShowDe(false);
+              if (selectedDate) setDe(selectedDate);
+            }}
+          />
+        )}
+
+        <Text style={styles.label}>Até:</Text>
+        <Button
+          title={ate ? ate.toLocaleDateString() : "Selecionar data de fim"}
+          onPress={() => setShowAte(true)}
+        />
+        {showAte && (
+          <DateTimePicker
+            value={ate || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(_, selectedDate) => {
+              setShowAte(false);
+              if (selectedDate) setAte(selectedDate);
+            }}
+          />
+        )}
+
+        <Text style={styles.label}>Horários de toma:</Text>
+        <View>
+          {horarios.length === 0 ? (
+            <Text style={styles.empty}>Nenhum horário adicionado.</Text>
+          ) : (
+            horarios.map((hora, idx) => (
+              <View key={idx} style={styles.horarioItem}>
+                <Text style={styles.horarioText}>{hora}</Text>
+                <TouchableOpacity onPress={() => removerHorario(idx)}>
+                  <Text style={styles.remover}>Remover</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+        </View>
+        <Button
+          title="Adicionar horário"
           onPress={() => setShowTimePicker(true)}
         />
         {showTimePicker && (
@@ -177,19 +234,26 @@ export default function EditarMedicamentoDetalheScreen() {
           />
         )}
 
-      <View style={styles.gap12} />
+        <Text style={styles.label}>Imagem do medicamento:</Text>
+        {imagemUrl && !image && (
+          <Image source={{ uri: imagemUrl }} style={styles.imagePreview} />
+        )}
+        {image && (
+          <Image source={{ uri: image }} style={styles.imagePreview} />
+        )}
+        <Button title="Alterar imagem" onPress={pickImage} />
 
-      <Button
-        title="GUARDAR ALTERAÇÕES"
-        color="#2196F3"
-        onPress={atualizarMedicamento}
-      />
+        <View style={styles.gap12} />
+        <Button title="Guardar Alterações" onPress={atualizarMedicamento} disabled={uploading || loading} />
+        {(uploading || loading) && <ActivityIndicator style={{ marginTop: 10 }} />}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60 },
+  scrollContent: { paddingBottom: 40 },
   title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
   input: {
     borderWidth: 1,
@@ -226,4 +290,11 @@ const styles = StyleSheet.create({
   },
   empty: { color: '#888', fontStyle: 'italic', marginBottom: 6 },
   gap12: { height: 12 },
+  imagePreview: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    marginVertical: 10,
+    alignSelf: 'center',
+  },
 });
