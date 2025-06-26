@@ -12,7 +12,7 @@ export default function BackButton({ label = "Início" }) {
       onPress={() => router.replace("/")}
       accessibilityLabel="Voltar à página inicial"
     >
-      <Ionicons name="arrow-back" size={24} color="#2196F3" />
+      <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
       <Text style={styles.backText}>{label}</Text>
     </TouchableOpacity>
   );
@@ -28,12 +28,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#2196F3",
     elevation: 2,
   },
   backText: {
-    fontSize: 16,
-    color: "#2196F3",
+    fontSize: 20,
+    color: "#FFFFFF",
     marginLeft: 5,
     fontWeight: "bold",
   },

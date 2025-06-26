@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "598155392834",
+    "project_id": "my-senior-app-fc0b2",
+    "storage_bucket": "my-senior-app-fc0b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:598155392834:android:8a966012f562a4fdd37adb",
+        "android_client_info": {
+          "package_name": "com.senior.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrVrwm0Zxy9ILnExXelw-Pp7DHs7tM55k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
