@@ -1,5 +1,6 @@
 import { FirebaseError } from '@firebase/app';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +17,27 @@ export default function AuthScreen() {
     setLoading(true);
     setErrorMsg('');
     try {
-      await auth().signInWithEmailAndPassword(email, password);
+      const userCredential = await auth().signInWithEmailAndPassword(email, password);
+      // Vai buscar o tipo de conta ao Firestore
+      const userDoc = await firestore()
+        .collection('Utilizadores')
+        .where('uid', '==', userCredential.user.uid)
+        .limit(1)
+        .get();
+
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data();
+        if (userData.isCuidador) {
+          router.replace('/(cuidador)' as any);
+        } else {
+          router.replace('/(tabs)');
+        }
+      } else {
+        setErrorMsg('Conta não encontrada na base de dados.');
+      }
     } catch (e: any) {
       const err = e as FirebaseError;
-      setErrorMsg('Login falhou: ' + err.message);
+      setErrorMsg('Informações Incorretas. Certifique-se de que o email é válido e que a palavra-passe tem pelo menos 6 caracteres.'); // + err.message
     } finally {
       setLoading(false);
     }
