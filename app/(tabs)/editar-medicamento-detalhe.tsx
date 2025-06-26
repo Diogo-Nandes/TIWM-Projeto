@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, Platform, StyleSheet, Text, TextInput, View, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TextInput, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import BackButton from '../../components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import storage from '@react-native-firebase/storage';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function EditarMedicamentoDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,7 +34,6 @@ export default function EditarMedicamentoDetalheScreen() {
           setLoading(false);
           return;
         }
-
         const doc = await firestore().collection('Medicamentos').doc(id).get();
         if (doc.exists()) {
           const data = doc.data();
@@ -78,14 +78,12 @@ export default function EditarMedicamentoDetalheScreen() {
       Alert.alert('Permissão necessária', 'Precisamos de acesso à sua galeria!');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.5,
+      quality: 0.7,
     });
-
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setImage(result.assets[0].uri);
     }
@@ -113,6 +111,11 @@ export default function EditarMedicamentoDetalheScreen() {
   const atualizarMedicamento = async () => {
     if (!nome.trim() || !quantidade.trim() || !de || !ate || horarios.length === 0) {
       Alert.alert('Preenche todos os campos e adiciona pelo menos um horário!');
+      return;
+    }
+    // Validação de datas
+    if (de && ate && ate <= de) {
+      Alert.alert('A data de fim deve ser superior à data de início.');
       return;
     }
     setLoading(true);
@@ -150,13 +153,13 @@ export default function EditarMedicamentoDetalheScreen() {
       <BackButton />
       <Text style={styles.title}>Editar Medicamento</Text>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
         <Text style={styles.label}>Nome do medicamento:</Text>
         <TextInput
           style={styles.input}
           placeholder="Nome do medicamento"
           value={nome}
           onChangeText={setNome}
+          placeholderTextColor="#aaa"
         />
 
         <Text style={styles.label}>Dosagem:</Text>
@@ -166,13 +169,19 @@ export default function EditarMedicamentoDetalheScreen() {
           value={quantidade}
           onChangeText={setQuantidade}
           keyboardType="numeric"
+          placeholderTextColor="#aaa"
         />
 
         <Text style={styles.label}>De:</Text>
-        <Button
-          title={de ? de.toLocaleDateString() : "Selecionar data de início"}
+        <TouchableOpacity
+          style={styles.button}
           onPress={() => setShowDe(true)}
-        />
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>
+            {de ? de.toLocaleDateString() : "Selecionar data de início"}
+          </Text>
+        </TouchableOpacity>
         {showDe && (
           <DateTimePicker
             value={de || new Date()}
@@ -186,10 +195,15 @@ export default function EditarMedicamentoDetalheScreen() {
         )}
 
         <Text style={styles.label}>Até:</Text>
-        <Button
-          title={ate ? ate.toLocaleDateString() : "Selecionar data de fim"}
+        <TouchableOpacity
+          style={styles.button1}
           onPress={() => setShowAte(true)}
-        />
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText1}>
+            {ate ? ate.toLocaleDateString() : "Selecionar data de fim"}
+          </Text>
+        </TouchableOpacity>
         {showAte && (
           <DateTimePicker
             value={ate || new Date()}
@@ -217,10 +231,13 @@ export default function EditarMedicamentoDetalheScreen() {
             ))
           )}
         </View>
-        <Button
-          title="Adicionar horário"
+        <TouchableOpacity
+          style={styles.button}
           onPress={() => setShowTimePicker(true)}
-        />
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>Adicionar horário</Text>
+        </TouchableOpacity>
         {showTimePicker && (
           <DateTimePicker
             value={new Date()}
@@ -234,18 +251,38 @@ export default function EditarMedicamentoDetalheScreen() {
           />
         )}
 
-        <Text style={styles.label}>Imagem do medicamento:</Text>
-        {imagemUrl && !image && (
-          <Image source={{ uri: imagemUrl }} style={styles.imagePreview} />
-        )}
-        {image && (
-          <Image source={{ uri: image }} style={styles.imagePreview} />
-        )}
-        <Button title="Alterar imagem" onPress={pickImage} />
+        <View style={styles.imageSection}>
+          <TouchableOpacity
+            style={styles.imagePlaceholder}
+            onPress={pickImage}
+            accessibilityRole="imagebutton"
+            accessibilityLabel="Adicionar imagem"
+          >
+            {image ? (
+              <Image source={{ uri: image }} style={styles.imagePreview} />
+            ) : imagemUrl ? (
+              <Image source={{ uri: imagemUrl }} style={styles.imagePreview} />
+            ) : (
+              <View style={styles.placeholderContent}>
+                <Ionicons name="add-circle-outline" size={56} color="#bbb" />
+                <Text style={styles.placeholderText}>Adicionar imagem</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.gap12} />
-        <Button title="Guardar Alterações" onPress={atualizarMedicamento} disabled={uploading || loading} />
-        {(uploading || loading) && <ActivityIndicator style={{ marginTop: 10 }} />}
+        {uploading || loading ? (
+          <ActivityIndicator size="large" color="#2196F3" />
+        ) : (
+          <TouchableOpacity
+            style={styles.buttonPrimary}
+            onPress={atualizarMedicamento}
+            accessibilityRole="button"
+          >
+            <Text style={styles.buttonTextPrimary}>Guardar Alterações</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -254,47 +291,125 @@ export default function EditarMedicamentoDetalheScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60 },
   scrollContent: { paddingBottom: 40 },
-  title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
+  title: {
+    fontSize: 38,
+    fontWeight: "bold",
+    color: "#2196F3",
+    textAlign: "center",
+    marginBottom: 20,
+    marginTop: 40,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#bbb',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
-    fontSize: 16,
+    fontSize: 22,
     backgroundColor: '#f9f9f9',
+    minHeight: 56,
   },
   label: {
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 16,
+    marginBottom: 6,
     fontWeight: 'bold',
     color: '#2196F3',
+    fontSize: 20,
+  },
+  button: {
+    backgroundColor: '#e3f2fd',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 12,
+    alignItems: 'center',
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#1565c0',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  button1: {
+    backgroundColor: '#1565c0',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 12,
+    alignItems: 'center',
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  buttonText1: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  buttonPrimary: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 18,
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  buttonTextPrimary: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   horarioItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
     backgroundColor: '#e3f2fd',
-    borderRadius: 6,
-    padding: 8,
+    borderRadius: 10,
+    padding: 12,
     justifyContent: 'space-between',
   },
   horarioText: {
-    fontSize: 16,
+    fontSize: 22,
     color: '#1565c0',
   },
   remover: {
     color: '#F44336',
     fontWeight: 'bold',
-    marginLeft: 12,
+    fontSize: 18,
+    marginLeft: 20,
   },
-  empty: { color: '#888', fontStyle: 'italic', marginBottom: 6 },
-  gap12: { height: 12 },
+  empty: { color: '#888', fontStyle: 'italic', marginBottom: 10, fontSize: 18 },
+  gap12: { height: 18 },
+  imageSection: { alignItems: 'center', marginTop: 30, marginBottom: 8 },
+  imagePlaceholder: {
+    width: 160,
+    height: 160,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#bbb',
+    marginBottom: 8,
+  },
+  placeholderContent: { 
+    flex: 1, 
+    width: '100%', 
+    height: '100%', 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  placeholderText: { 
+    color: '#888', 
+    fontSize: 20, 
+    marginTop: 8, 
+    fontWeight: 'bold', 
+    textAlign: 'center' 
+  },
   imagePreview: {
-    width: 150,
-    height: 150,
-    borderRadius: 12,
-    marginVertical: 10,
-    alignSelf: 'center',
+    width: 160,
+    height: 160,
+    borderRadius: 16,
+    resizeMode: 'cover',
   },
 });
+

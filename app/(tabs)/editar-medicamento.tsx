@@ -4,6 +4,7 @@ import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import BackButton from '../../components/BackButton';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 type Medicamento = {
   id: string;
@@ -100,11 +101,14 @@ export default function EditarMedicamentoScreen() {
           <TouchableOpacity
             style={styles.item}
             onPress={() => router.push({ pathname: '/editar-medicamento-detalhe', params: { id: item.id } })}
+            accessibilityRole="button"
           >
             <Text style={styles.nome}>{item.Nome_Med}</Text>
+            <Ionicons name="create-outline" size={28} color="#1565c0" style={{ marginLeft: 12 }} />
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={styles.empty}>Nenhum medicamento encontrado.</Text>}
+        contentContainerStyle={{ paddingBottom: 40 }}
       />
     </View>
   );
@@ -112,7 +116,7 @@ export default function EditarMedicamentoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60 },
-  title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
+  title: { fontSize: 38, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
   filtros: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -123,13 +127,20 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 18,
+    marginBottom: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  nome: { fontSize: 18, fontWeight: 'bold' },
-  empty: { textAlign: 'center', marginTop: 32, color: '#888' },
+  nome: { fontSize: 28, fontWeight: 'bold', color: '#1565c0', textAlign: 'left' },
+  empty: { textAlign: 'center', marginTop: 32, color: '#888', fontSize: 20 },
   label: {
     marginBottom: 6,
     fontWeight: 'bold',
     color: '#2196F3',
+    fontSize: 20,
+    textAlign: 'center'
   },
 });

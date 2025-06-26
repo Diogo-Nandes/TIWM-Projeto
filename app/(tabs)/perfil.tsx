@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ActivityIndicator, Button, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ActivityIndicator, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView, Dimensions } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import BackButton from '../../components/BackButton';
 import * as ImagePicker from 'expo-image-picker';
 import storage from '@react-native-firebase/storage';
+import { Ionicons } from '@expo/vector-icons';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function PerfilScreen() {
   const [loading, setLoading] = useState(true);
@@ -138,15 +141,18 @@ export default function PerfilScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <BackButton />
       <Text style={styles.title}>Perfil</Text>
-      <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
+      <TouchableOpacity onPress={pickImage} style={styles.imageSection} accessibilityRole="imagebutton">
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.profileImage} />
         ) : (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>Adicionar Foto</Text>
+          <View style={styles.imagePlaceholder}>
+            <View style={styles.placeholderContent}>
+              <Ionicons name="person-circle-outline" size={56} color="#bbb" />
+              <Text style={styles.placeholderText}>Adicionar Foto</Text>
+            </View>
           </View>
         )}
       </TouchableOpacity>
@@ -157,26 +163,104 @@ export default function PerfilScreen() {
         onChangeText={setUsername}
         placeholder="Insira o seu nome"
         autoCapitalize="words"
+        placeholderTextColor="#aaa"
       />
       {saving || uploading ? (
-        <ActivityIndicator style={{ marginTop: 20 }} />
+        <ActivityIndicator style={{ marginTop: 20 }} size="large" color="#2196F3" />
       ) : (
-        <Button title="Guardar Alterações" onPress={guardarUsername} />
+        <TouchableOpacity style={styles.buttonPrimary} onPress={guardarUsername} accessibilityRole="button">
+          <Text style={styles.buttonTextPrimary}>Guardar Alterações</Text>
+        </TouchableOpacity>
       )}
-      <View style={{ height: 20 }} />
-      <Button title="Sign out" color="#F44336" onPress={logout} />
-    </View>
+      <View style={{ height: 28 }} />
+      <TouchableOpacity style={styles.buttonLogout} onPress={logout} accessibilityRole="button">
+        <Text style={styles.buttonTextLogout}>Terminar Sessão</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60 },
+  container: { flexGrow: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60, alignItems: 'stretch' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
-  imageContainer: { alignSelf: 'center', marginBottom: 20 },
-  profileImage: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#e3f2fd' },
-  placeholder: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#e3f2fd', justifyContent: 'center', alignItems: 'center' },
-  placeholderText: { color: '#2196F3', fontWeight: 'bold' },
-  label: { fontWeight: 'bold', color: '#2196F3', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#bbb', borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 20, backgroundColor: '#f9f9f9' },
+  title: { fontSize: 38, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 20, marginTop: 40 },
+  imageSection: { alignItems: 'center', marginBottom: 20 },
+  profileImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 80, // redondo
+    backgroundColor: '#e3f2fd',
+    resizeMode: 'cover',
+  },
+  imagePlaceholder: {
+    width: 160,
+    height: 160,
+    borderRadius: 80, // redondo
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#bbb',
+    marginBottom: 8,
+  },
+  placeholderContent: { 
+    flex: 1, 
+    width: '100%', 
+    height: '100%', 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  placeholderText: { 
+    color: '#888', 
+    fontSize: 18, 
+    marginTop: 8, 
+    fontWeight: 'bold', 
+    textAlign: 'center' 
+  },
+  label: { fontWeight: 'bold', color: '#2196F3', marginBottom: 12, fontSize: 22, textAlign: 'center' },
+  input: { 
+    borderWidth: 1, 
+    borderColor: '#bbb', 
+    borderRadius: 12, 
+    padding: 16, 
+    fontSize: 22, 
+    marginBottom: 24, 
+    backgroundColor: '#f9f9f9', 
+    minHeight: 56, 
+    width: '100%', 
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  buttonPrimary: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 8,
+    minHeight: 56,
+    width: '100%',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+  },
+  buttonTextPrimary: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  buttonLogout: {
+    backgroundColor: '#F44336',
+    borderRadius: 12,
+    paddingVertical: 18,
+    alignItems: 'center',
+    minHeight: 56,
+    width: '100%',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+  },
+  buttonTextLogout: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
 });
+

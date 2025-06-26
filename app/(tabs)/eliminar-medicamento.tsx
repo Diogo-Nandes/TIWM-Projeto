@@ -4,6 +4,7 @@ import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import BackButton from '../../components/BackButton';
 import storage from '@react-native-firebase/storage';
+import { Ionicons } from '@expo/vector-icons';
 
 type Medicamento = {
   id: string;
@@ -101,7 +102,7 @@ export default function EliminarMedicamentoScreen() {
     <View style={styles.container}>
       <BackButton />
       <Text style={styles.title}>Eliminar Medicamento</Text>
-      
+
       <Text style={styles.label}>Filtros de Pesquisa:</Text>
       <View style={styles.filtros}>
         <Button
@@ -131,11 +132,14 @@ export default function EliminarMedicamentoScreen() {
             ]}
             onPress={() => eliminarMedicamento(item.id, item.Nome_Med)}
             disabled={deleting !== null}
+            accessibilityRole="button"
           >
             <Text style={styles.nome}>{item.Nome_Med}</Text>
+            <Ionicons name="trash" size={28} color="#F44336" style={{ marginLeft: 12 }} />
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={styles.empty}>Nenhum medicamento encontrado.</Text>}
+        contentContainerStyle={{ paddingBottom: 40 }}
       />
     </View>
   );
@@ -143,7 +147,7 @@ export default function EliminarMedicamentoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: 60 },
-  title: { fontSize: 32, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
+  title: { fontSize: 38, fontWeight: "bold", color: "#2196F3", textAlign: "center", marginBottom: 10, marginTop: 40 },
   filtros: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -154,19 +158,23 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    backgroundColor: '#f9f9f9',
-    marginBottom: 4,
-    borderRadius: 8,
-    alignItems: 'center'
+    backgroundColor: '#f8f9fa',
+    borderRadius: 18,
+    marginBottom: 18,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   itemDeleting: {
     backgroundColor: '#ffcccc',
   },
-  nome: { fontSize: 18, fontWeight: 'bold' },
-  empty: { textAlign: 'center', marginTop: 32, color: '#888' },
+  nome: { fontSize: 28, fontWeight: 'bold', color: '#1565c0', textAlign: 'left' },
+  empty: { textAlign: 'center', marginTop: 32, color: '#888', fontSize: 20 },
   label: {
     marginBottom: 6,
     fontWeight: 'bold',
     color: '#2196F3',
+    fontSize: 20,
+    textAlign: 'center'
   },
 });

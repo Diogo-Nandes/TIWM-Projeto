@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Button } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -57,7 +57,6 @@ export default function HorarioScreen() {
       med.Horarios && med.Horarios.length > 0 && isDateInRange(med)
     );
 
-    // Extrair todas as horas únicas
     const horasUnicas = Array.from(
       new Set(
         medicamentosFiltrados
@@ -70,7 +69,6 @@ export default function HorarioScreen() {
       )
     );
 
-    // Criar grupos de horários
     return horasUnicas.map(hora => ({
       hora,
       medicamentos: medicamentosFiltrados.filter(med => 
@@ -88,11 +86,13 @@ export default function HorarioScreen() {
         Data selecionada: {date.toLocaleDateString('pt-PT')}
       </Text>
       
-      <Button
-        title="Escolher Data"
+      <TouchableOpacity
+        style={styles.button}
         onPress={() => setShowDatePicker(true)}
-        color="#2196F3"
-      />
+        accessibilityLabel="Escolher data"
+      >
+        <Text style={styles.buttonText}>Escolher Data</Text>
+      </TouchableOpacity>
 
       {showDatePicker && (
         <DateTimePicker
@@ -107,7 +107,7 @@ export default function HorarioScreen() {
       )}
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 20 }} />
+        <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 20 }} />
       ) : (
         <FlatList
           data={getHorariosAgrupados()}
@@ -127,6 +127,7 @@ export default function HorarioScreen() {
               Nenhum medicamento agendado para esta data.
             </Text>
           }
+          contentContainerStyle={{ paddingBottom: 40 }}
         />
       )}
     </View>
@@ -141,49 +142,65 @@ const styles = StyleSheet.create({
     paddingTop: 60 
   },
   title: { 
-    fontSize: 32, 
+    fontSize: 38,
     fontWeight: "bold", 
     color: "#2196F3", 
     textAlign: "center", 
-    marginBottom: 10, 
-    marginTop: 40 
+    marginBottom: 20, 
+    marginTop: 40,
   },
   dateText: {
-    fontSize: 18,
+    fontSize: 22,
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
     color: '#555',
   },
-  horarioGroup: {
+  button: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginHorizontal: 40,
     marginBottom: 20,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  horarioGroup: {
+    marginBottom: 25,
     backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
   },
   horaHeader: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#1565c0',
-    marginBottom: 8,
-    borderBottomWidth: 1,
+    marginBottom: 12,
+    borderBottomWidth: 2,
     borderBottomColor: '#e3e3e3',
-    paddingBottom: 4,
+    paddingBottom: 8,
+    textAlign: 'left',
   },
   medicamentoItem: {
     backgroundColor: '#e3f2fd',
-    borderRadius: 6,
-    padding: 10,
-    marginVertical: 4,
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 8,
   },
   medicamentoNome: {
-    fontSize: 16,
+    fontSize: 22,
     color: '#2196F3',
+    textAlign: 'center',
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 30,
+    marginTop: 40,
     color: '#888',
-    fontSize: 16,
+    fontSize: 20,
+    paddingHorizontal: 20,
   },
 });
-
